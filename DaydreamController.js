@@ -5,7 +5,9 @@
 function DaydreamController() {
 
 	var state = {};
-
+	var _device = null;
+	var _characteristic = null;
+	
 	function connect() {
 
 		return navigator.bluetooth.requestDevice( {
@@ -15,6 +17,7 @@ function DaydreamController() {
 			optionalServices: [ 0xfe55 ]
 		} )
 		.then( function ( device ) {
+			_device = device;
 			return device.gatt.connect();
 		} )
 		.then( function ( server ) {
@@ -24,10 +27,30 @@ function DaydreamController() {
 			return service.getCharacteristic( '00000001-1000-1000-8000-00805f9b34fb' );
 		} )
 		.then( function ( characteristic ) {
+			_characteristic = characteristic;
 			characteristic.addEventListener( 'characteristicvaluechanged', handleData );
 			return characteristic.startNotifications();
 		} )
 
+	}
+	
+	function disconnect() {
+		if( _device == null ) {
+			return;
+		}
+		if(!_device.gatt.connected) {
+			return;
+		}
+		_characteristic.removeEventListener( 'characteristicvaluechanged', handleData );
+		_device.gatt.disconnect{};
+		_device == null
+	}
+	
+	function connected() {
+		if( _device == null ) {
+			return false
+		}
+		return _device.gatt.connected;
 	}
 
 	function handleData( event ) {
@@ -95,6 +118,8 @@ function DaydreamController() {
 
 	return {
 		connect: connect,
+		disconnect: disconnect,
+		connected: connected,
 		onStateChange: function ( callback ) {
 			onStateChangeCallback = callback;
 		}
